@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"P:\\\\Anime\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(Format-Table -AutoSize)",
+      "Bash(claude doctor *)",
+      "Bash(claude --version)",
+      "Bash(node -e \"require\\('@anthropic-ai/claude-code/package.json'\\).version\")",
+      "PowerShell(npm list *)",
+      "Bash(node *)",
+      "PowerShell(& \"C:\\\\Users\\\\浦仕旭\\\\AppData\\\\Roaming\\\\npm\\\\claude.cmd\" doctor)",
+      "Bash(npm install *)",
+      "Bash(curl -s http://localhost:3001/api/settings)",
+      "Bash(npx vite *)",
+      "PowerShell(Get-Process *)",
+      "Bash(npx concurrently *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)"
+    ]
+  }
+}
