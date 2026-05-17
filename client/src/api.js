@@ -24,6 +24,13 @@ export async function triggerScan() {
   return data;
 }
 
+export async function triggerScrape() {
+  const res = await fetch(`${BASE}/scrape`, { method: 'POST' });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || '刮削启动失败');
+  return data;
+}
+
 export async function getAnimes() {
   const res = await fetch(`${BASE}/animes`);
   return res.json();
@@ -42,5 +49,19 @@ export async function updateAnime(id, data) {
     body: JSON.stringify(data)
   });
   if (!res.ok) throw new Error('更新失败');
+  return res.json();
+}
+
+export function streamUrl(filePath) {
+  return `${BASE}/stream?path=${encodeURIComponent(filePath)}`;
+}
+
+export function coverUrl(localPath) {
+  if (!localPath) return null;
+  return `${BASE}/cover?path=${encodeURIComponent(localPath)}`;
+}
+
+export async function getServerInfo() {
+  const res = await fetch(`${BASE}/server-info`);
   return res.json();
 }

@@ -1,10 +1,5 @@
 import { useState } from 'react'
-import { updateAnime } from '../api'
-
-function getCoverUrl(cover) {
-  if (!cover) return null
-  return `/api/cover?path=${encodeURIComponent(cover)}`
-}
+import { updateAnime, coverUrl } from '../api'
 
 function TagEditor({ tags, onTagsChange }) {
   const [input, setInput] = useState('')
@@ -51,12 +46,13 @@ function TagEditor({ tags, onTagsChange }) {
   )
 }
 
-export default function AnimeDetail({ anime, onBack, onUpdate }) {
+export default function AnimeDetail({ anime, onBack, onUpdate, onPlay }) {
   const [tags, setTags] = useState(anime.tags || [])
   const [episodes, setEpisodes] = useState(anime.episodes || [])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const coverUrl = getCoverUrl(anime.cover)
+  const localCover = coverUrl(anime.cover)
+  const posterUrl = anime.poster || localCover
 
   const save = async (newEpisodes, newTags) => {
     setSaving(true)
@@ -91,8 +87,18 @@ export default function AnimeDetail({ anime, onBack, onUpdate }) {
   const total = episodes.length
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen">
+      {/* Backdrop */}
+      <div className="relative">
+        <div className="absolute inset-0 h-64 bg-gradient-to-b from-violet-900/30 to-slate-900" />
+        {posterUrl && (
+          <div className="absolute inset-0 h-64 overflow-hidden opacity-20 blur-xl scale-110">
+            <img src={posterUrl} alt="" className="w-full h-full object-cover" />
+          </div>
+        )}
+      </div>
+
+      <div className="relative max-w-5xl mx-auto px-6 pt-6 pb-12">
         {/* Back */}
         <button
           onClick={onBack}
@@ -112,41 +118,85 @@ export default function AnimeDetail({ anime, onBack, onUpdate }) {
         )}
 
         {/* Header */}
-        <div className="flex gap-6 mb-8">
-          <div className="w-40 h-56 flex-shrink-0 rounded-xl overflow-hidden bg-slate-800">
-            {coverUrl ? (
-              <img
-                src={coverUrl}
-                alt={anime.name}
-                className="w-full h-full object-cover"
-                onError={(e) => { e.target.style.display = 'none' }}
-              />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-violet-600 to-purple-700
-                            flex items-center justify-center">
-                <span className="text-4xl font-bold text-white/80">{anime.name.charAt(0)}</span>
-              </div>
-            )}
+        <div className="flex flex-col md:flex-row gap-6 mb-8">
+          {/* Poster */}
+          <div className="w-44 flex-shrink-0">
+            <div className="aspect-[2/3] rounded-xl overflow-hidden bg-slate-800 shadow-xl">
+              {posterUrl ? (
+                <img
+                  src={posterUrl}
+                  alt={anime.name_cn || anime.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => { e.target.style.display = 'none' }}
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-violet-600 to-purple-700
+                              flex items-center justify-center">
+                  <span className="text-5xl font-black text-white/70">
+                    {(anime.name_cn || anime.name).charAt(0)}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Info */}
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-white truncate">{anime.name}</h1>
-            <p className="text-sm text-slate-500 mt-1 truncate" title={anime.path}>{anime.path}</p>
+            <h1 className="text-3xl font-black text-white">
+              {anime.name_cn || anime.name}
+            </h1>
+            {anime.name_cn && anime.name_cn !== anime.name && (
+              <p className="text-sm text-slate-500 mt-0.5">{anime.name}</p>
+            )}
+            <p className="text-xs text-slate-600 mt-1 truncate" title={anime.path}>
+              {anime.path}
+            </p>
+
+            {/* Score + Stats */}
             <div className="flex items-center gap-4 mt-3">
-              <div className="text-sm">
+              {anime.score > 0 && (
+                <div className="flex items-center gap-1">
+                  <span className="text-yellow-400 text-sm">★</span>
+                  <span className="text-lg font-bold text-white">{anime.score.toFixed(1)}</span>
+                </div>
+              )}
+              <div className="text-sm text-slate-400">
                 <span className="text-violet-400 font-medium">{watched}</span>
-                <span className="text-slate-500">/{total} 集已看</span>
+                <span>/{total} 集已看</span>
               </div>
-              <div className="flex-1 max-w-xs h-1.5 bg-slate-700 rounded-full overflow-hidden">
+              <div className="flex-1 max-w-40 h-1.5 bg-slate-700 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-violet-500 rounded-full transition-all"
                   style={{ width: `${total > 0 ? (watched / total) * 100 : 0}%` }}
                 />
               </div>
             </div>
+
+            {/* Synopsis */}
+            {anime.summary && (
+              <p className="mt-3 text-sm text-slate-300 leading-relaxed line-clamp-3">
+                {anime.summary}
+              </p>
+            )}
+
+            {/* Bangumi Tags */}
+            {anime.bangumi_tags?.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-3">
+                {anime.bangumi_tags.map(t => (
+                  <span key={t} className="px-2 py-0.5 bg-cyan-900/40 text-cyan-300 text-[11px]
+                                         rounded-full border border-cyan-800/50">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* User Tags */}
             <div className="mt-4">
-              <p className="text-xs text-slate-500 mb-1">标签</p>
+              <p className="text-xs text-slate-500 mb-1">个人标签</p>
               <TagEditor tags={tags} onTagsChange={handleTagsChange} />
             </div>
+
             {saving && (
               <span className="inline-block mt-2 text-xs text-slate-500">保存中...</span>
             )}
@@ -155,22 +205,46 @@ export default function AnimeDetail({ anime, onBack, onUpdate }) {
 
         {/* Episodes */}
         <div>
-          <h2 className="text-lg font-semibold text-white mb-4">剧集列表</h2>
+          <h2 className="text-lg font-bold text-white mb-3">剧集列表</h2>
           <div className="space-y-1">
             {episodes.map((ep, idx) => (
               <div
                 key={ep.filename}
-                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors
-                          ${ep.watched ? 'bg-slate-800/50' : 'bg-slate-800 hover:bg-slate-700/50'}`}
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors group/ep
+                          ${ep.watched
+                            ? 'bg-slate-800/30 hover:bg-slate-800/50'
+                            : 'bg-slate-800 hover:bg-slate-700/60'
+                          }`}
               >
-                <span className="text-xs text-slate-500 w-8 text-right flex-shrink-0">
+                <span className="text-xs text-slate-500 w-8 text-right flex-shrink-0 tabular-nums">
                   {idx + 1}
                 </span>
+
+                {/* Play button */}
+                <button
+                  onClick={() => onPlay(anime, ep)}
+                  className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-700 group-hover/ep:bg-violet-600
+                           flex items-center justify-center transition-colors"
+                  title="播放"
+                >
+                  <svg className="w-3.5 h-3.5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                </button>
+
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm truncate ${ep.watched ? 'text-slate-500 line-through' : 'text-slate-200'}`}>
                     {ep.filename}
                   </p>
+                  {/* Mini progress bar */}
+                  {ep.progress > 0 && !ep.watched && (
+                    <div className="mt-1 h-0.5 bg-slate-700 rounded-full overflow-hidden max-w-60">
+                      <div className="h-full bg-violet-500/60 rounded-full"
+                           style={{ width: `${Math.min((ep.progress / 1440) * 100, 100)}%` }} />
+                    </div>
+                  )}
                 </div>
+
                 <button
                   onClick={() => toggleWatched(idx)}
                   className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center

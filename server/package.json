@@ -1,11 +1,31 @@
 {
   "name": "anime-manager-server",
   "type": "module",
+  "bin": "index.js",
   "scripts": {
-    "dev": "node --watch index.js"
+    "dev": "node --watch index.js --no-open",
+    "start": "node index.js"
   },
   "dependencies": {
     "express": "^4.21.0",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "axios": "^1.7.0"
+  },
+  "devDependencies": {
+    "@yao-pkg/pkg": "^5.16.0"
+  },
+  "pkg": {
+    "scripts": [
+      "services/**/*.js",
+      "routes/**/*.js"
+    ],
+    "assets": [
+      "../client/dist/**/*",
+      "../db.json"
+    ],
+    "targets": [
+      "node18-win-x64"
+    ],
+    "outputPath": "../release"
   }
 }

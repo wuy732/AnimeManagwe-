@@ -92,7 +92,12 @@ export function scan(animePath) {
       name: entry,
       path: fullPath,
       cover,
+      poster: null,
+      summary: '',
+      score: 0,
+      bangumi_tags: [],
       tags: [],
+      scraped: false,
       episodes: videos
     });
   }

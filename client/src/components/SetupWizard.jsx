@@ -1,10 +1,15 @@
-import { useState } from 'react'
-import { updateSettings } from '../api'
+import { useState, useEffect } from 'react'
+import { updateSettings, getServerInfo } from '../api'
 
 export default function SetupWizard({ hasPath, onPathSet, onScan, scanning, error }) {
   const [path, setPath] = useState('')
   const [saving, setSaving] = useState(false)
   const [localError, setLocalError] = useState('')
+  const [lanIPs, setLanIPs] = useState([])
+
+  useEffect(() => {
+    getServerInfo().then(info => setLanIPs(info.ips || [])).catch(() => {})
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -80,6 +85,12 @@ export default function SetupWizard({ hasPath, onPathSet, onScan, scanning, erro
               {saving ? '验证中...' : '确认路径并扫描'}
             </button>
           </form>
+        )}
+
+        {lanIPs.length > 0 && (
+          <p className="mt-6 text-center text-xs text-slate-500">
+            局域网设备可访问: {lanIPs.map(ip => `http://${ip}:3001`).join(' 或 ')}
+          </p>
         )}
       </div>
     </div>
