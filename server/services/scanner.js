@@ -1,4 +1,4 @@
-import { readdirSync, statSync, existsSync } from 'fs';
+import { readdirSync, readFileSync, statSync, existsSync } from 'fs';
 import { join, extname, basename } from 'path';
 import { randomUUID } from 'crypto';
 
@@ -87,11 +87,23 @@ export function scan(animePath) {
 
     const cover = findCover(fullPath);
 
+    // Parse local txt files for notes
+    let notes = '';
+    try {
+      for (const f of readdirSync(fullPath)) {
+        if (f.endsWith('.txt') && !f.startsWith('.')) {
+          const content = readFileSync(join(fullPath, f), 'utf-8');
+          notes += (notes ? '\n' : '') + content.slice(0, 2000);
+        }
+      }
+    } catch { /* skip */ }
+
     animes.push({
       id: randomUUID(),
       name: entry,
       path: fullPath,
       cover,
+      notes,
       tags: [],
       episodes: videos
     });

@@ -23,11 +23,9 @@ export default function App() {
 
   const loadSettings = useCallback(async () => {
     try {
-      const { anime_path } = await getSettings()
-      setAnimePath(anime_path)
-      if (anime_path) {
-        await loadAnimes()
-      }
+      const s = await getSettings()
+      setAnimePath(s.anime_path)
+      if (s.anime_path) await loadAnimes()
     } catch {
       setError('无法连接服务器')
     } finally {
@@ -36,11 +34,6 @@ export default function App() {
   }, [loadAnimes])
 
   useEffect(() => { loadSettings() }, [loadSettings])
-
-  const handlePathSet = async (path) => {
-    setAnimePath(path)
-    await doScan()
-  }
 
   const doScan = async () => {
     setScanning(true)
@@ -62,22 +55,14 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
         <div className="animate-spin w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full" />
       </div>
     )
   }
 
   if (!animePath || (animes.length === 0 && !scanning)) {
-    return (
-      <SetupWizard
-        hasPath={!!animePath}
-        onPathSet={handlePathSet}
-        onScan={doScan}
-        scanning={scanning}
-        error={error}
-      />
-    )
+    return <SetupWizard hasPath={!!animePath} onScan={doScan} scanning={scanning} error={error} />
   }
 
   if (selected) {

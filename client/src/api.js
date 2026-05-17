@@ -6,15 +6,15 @@ export async function getSettings() {
   return res.json();
 }
 
-export async function updateSettings(animePath) {
+export async function updateSettings(data) {
   const res = await fetch(`${BASE}/settings`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ anime_path: animePath })
+    body: JSON.stringify(data)
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || '保存设置失败');
-  return data;
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.error || '保存失败');
+  return result;
 }
 
 export async function triggerScan() {
@@ -29,12 +29,6 @@ export async function getAnimes() {
   return res.json();
 }
 
-export async function getAnime(id) {
-  const res = await fetch(`${BASE}/animes/${id}`);
-  if (!res.ok) throw new Error('动漫不存在');
-  return res.json();
-}
-
 export async function updateAnime(id, data) {
   const res = await fetch(`${BASE}/animes/${id}`, {
     method: 'PATCH',
@@ -43,4 +37,25 @@ export async function updateAnime(id, data) {
   });
   if (!res.ok) throw new Error('更新失败');
   return res.json();
+}
+
+export async function playEpisode(filePath) {
+  const res = await fetch(`${BASE}/play`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filePath })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || '启动播放器失败');
+  return data;
+}
+
+export async function detectPlayer() {
+  const res = await fetch(`${BASE}/detect-player`, { method: 'POST' });
+  return res.json();
+}
+
+export function coverUrl(localPath) {
+  if (!localPath) return null;
+  return `${BASE}/cover?path=${encodeURIComponent(localPath)}`;
 }
