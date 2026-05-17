@@ -24,10 +24,18 @@ export async function triggerScan() {
   return data;
 }
 
-export async function triggerScrape() {
-  const res = await fetch(`${BASE}/scrape`, { method: 'POST' });
+export async function triggerScrape(force = false) {
+  const url = force ? `${BASE}/scrape?force=true` : `${BASE}/scrape`;
+  const res = await fetch(url, { method: 'POST' });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || '刮削启动失败');
+  return data;
+}
+
+export async function scrapeAnime(id) {
+  const res = await fetch(`${BASE}/scrape/${id}`, { method: 'POST' });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || '刮削失败');
   return data;
 }
 

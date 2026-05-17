@@ -7,7 +7,7 @@
     "dev:client": "cd client && npm run dev",
     "build": "cd client && npm run build",
     "start": "cd server && node index.js",
-    "build:exe": "npm run build && cd server && npx pkg . --targets node18-win-x64 --output ../release/anime-manager-web.exe",
+    "build:exe": "npm run build && cd server && npm run bundle && npx pkg . --targets node18-win-x64 --output ../release/anime-manager-web.exe",
     "install:all": "npm install && cd server && npm install && cd ../client && npm install"
   },
   "devDependencies": {

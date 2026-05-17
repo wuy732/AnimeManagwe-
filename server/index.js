@@ -10,8 +10,13 @@ import animeRouter from './routes/anime.js';
 import scannerRouter from './routes/scanner.js';
 import streamRouter from './routes/stream.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const __root = join(__dirname, '..');
+const __dirname = (typeof __dirname !== 'undefined')
+  ? __dirname  // CJS (pkg bundled)
+  : dirname(fileURLToPath(import.meta.url));  // ESM (dev)
+// Bundle entry lives in server/dist-bundle/ — go up one more level
+const __root = __dirname.endsWith('dist-bundle')
+  ? join(__dirname, '..', '..')
+  : join(__dirname, '..');
 const isPkg = typeof process.pkg !== 'undefined';
 
 // ── DB path (writable location for pkg) ──
@@ -20,7 +25,7 @@ function resolveDbPath() {
     const exeDir = dirname(process.execPath);
     const dbFile = join(exeDir, 'db.json');
     if (!existsSync(dbFile)) {
-      const bundled = join(__dirname, '..', 'db.json');
+      const bundled = join(__root, 'db.json');
       if (existsSync(bundled)) {
         writeFileSync(dbFile, readFileSync(bundled, 'utf-8'), 'utf-8');
       } else {
@@ -82,9 +87,58 @@ if (existsSync(DIST_PATH)) {
   console.log('[server] serving static frontend from client/dist');
 }
 
-// ── Start ──
+// ── Kill existing process on port ──
+function killPortProcess(port) {
+  return new Promise((resolve) => {
+    const cmd = process.platform === 'win32'
+      ? `powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort ${port} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"`
+      : `lsof -ti :${port} | xargs kill -9 2>/dev/null`;
+    exec(cmd, () => {
+      // Give the OS a moment to release the port
+      setTimeout(resolve, 800);
+    });
+  });
+}
+
+function startServer(port) {
+  return new Promise((resolve, reject) => {
+    const server = app.listen(port, '0.0.0.0', () => {
+      resolve(server);
+    });
+    server.on('error', (err) => {
+      reject(err);
+    });
+  });
+}
+
+// ── Start (with auto-kill previous instance) ──
 const PORT = 3001;
-app.listen(PORT, '0.0.0.0', () => {
+
+async function boot() {
+  try {
+    var server = await startServer(PORT);
+  } catch (err) {
+    if (err.code === 'EADDRINUSE') {
+      console.log('[boot] 端口被占用，正在关闭旧进程...');
+      await killPortProcess(PORT);
+      try {
+        server = await startServer(PORT);
+      } catch (retryErr) {
+        console.error('');
+        console.error('  ╔══════════════════════════════════════════╗');
+        console.error('  ║  端口 3001 无法释放，请手动关闭          ║');
+        console.error('  ╚══════════════════════════════════════════╝');
+        console.error('');
+        setTimeout(() => process.exit(1), 5000);
+        return;
+      }
+    } else {
+      console.error('Server error:', err.message);
+      process.exit(1);
+      return;
+    }
+  }
+
   const lanIPs = getLanIPs();
   console.log('');
   console.log('  ╔══════════════════════════════════════════╗');
@@ -98,7 +152,6 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('  ╚══════════════════════════════════════════╝');
   console.log('');
 
-  // Auto-open browser (only in pkg mode or when not in watch mode)
   if (isPkg || !process.argv.includes('--no-open')) {
     const url = `http://localhost:${PORT}`;
     const platform = process.platform;
@@ -109,4 +162,6 @@ app.listen(PORT, '0.0.0.0', () => {
         : `xdg-open "${url}"`;
     exec(cmd, () => {});
   }
-});
+}
+
+boot();

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getSettings, getAnimes, triggerScan, triggerScrape } from './api'
+import { getSettings, getAnimes, triggerScan, triggerScrape, scrapeAnime } from './api'
 import SetupWizard from './components/SetupWizard'
 import AnimeGrid from './components/AnimeGrid'
 import AnimeDetail from './components/AnimeDetail'
@@ -69,22 +69,41 @@ export default function App() {
     }
   }
 
-  const handleScrape = async () => {
+  const pollScrape = (intervalMs = 2000) => {
+    let polls = 0
+    const interval = setInterval(async () => {
+      try {
+        const data = await getAnimes()
+        setAnimes(data)
+        polls++
+        if (data.every(a => a.scraped) || polls > 30) {
+          clearInterval(interval)
+          setScraping(false)
+        }
+      } catch { clearInterval(interval); setScraping(false) }
+    }, intervalMs)
+  }
+
+  const handleScrape = async (force = false) => {
     setScraping(true)
     try {
-      await triggerScrape()
-      let polls = 0
-      const interval = setInterval(async () => {
-        try {
-          const data = await getAnimes()
-          setAnimes(data)
-          polls++
-          if (data.every(a => a.scraped) || polls > 30) clearInterval(interval)
-        } catch { clearInterval(interval) }
-      }, 2000)
+      await triggerScrape(force)
+      pollScrape()
     } catch (e) {
       setError(e.message)
       setScraping(false)
+    }
+  }
+
+  const handleScrapeAnime = async (animeId) => {
+    try {
+      await scrapeAnime(animeId)
+      const data = await getAnimes()
+      setAnimes(data)
+      const updated = data.find(a => a.id === animeId)
+      if (updated) setSelected(updated)
+    } catch (e) {
+      setError(e.message)
     }
   }
 
@@ -138,6 +157,8 @@ export default function App() {
       onBack={() => setSelected(null)}
       onUpdate={handleUpdateAnime}
       onPlay={handlePlayEpisode}
+      onScrape={handleScrapeAnime}
+      scraping={scraping}
     />
   ) : (
     <AnimeGrid

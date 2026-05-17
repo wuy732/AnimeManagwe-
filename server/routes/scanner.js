@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { readFileSync, writeFileSync } from 'fs';
 import { scan } from '../services/scanner.js';
-import { scrapeAll } from '../services/scraper.js';
+import { scrapeAll, searchBangumi } from '../services/scraper.js';
 
 export default function scannerRouter(dbPath) {
   const router = Router();
@@ -58,14 +58,45 @@ export default function scannerRouter(dbPath) {
     }
   });
 
+  // Batch scrape all unscraped (or force re-scrape all)
   router.post('/scrape', async (req, res) => {
     try {
       const db = readDB();
       if (!db.animes || db.animes.length === 0) {
         return res.status(400).json({ error: '没有动漫数据，请先扫描' });
       }
+      const force = req.query.force === 'true';
+      if (force) {
+        for (const a of db.animes) a.scraped = false;
+        writeDB(db);
+      }
       res.json({ message: '刮削已启动' });
       await scrapeAll(db.animes, writeDB, readDB);
+    } catch (err) {
+      console.error('[scrape] error:', err.message);
+    }
+  });
+
+  // Scrape a single anime (force re-scrape)
+  router.post('/scrape/:id', async (req, res) => {
+    try {
+      const db = readDB();
+      const anime = (db.animes || []).find(a => a.id === req.params.id);
+      if (!anime) return res.status(404).json({ error: '动漫不存在' });
+
+      res.json({ message: '刮削已启动' });
+
+      const info = await searchBangumi(anime.name);
+      if (info) {
+        anime.poster = info.poster;
+        anime.summary = info.summary;
+        anime.score = info.score;
+        anime.bangumi_tags = info.bangumi_tags;
+        anime.bangumi_id = info.bangumi_id;
+        anime.name_cn = info.name_cn;
+      }
+      anime.scraped = true;
+      writeDB(db);
     } catch (err) {
       console.error('[scrape] error:', err.message);
     }

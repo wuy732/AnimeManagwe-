@@ -49,21 +49,20 @@ export default function AnimeGrid({ animes, scanning, scraping, error, onSelect,
               )}
             </div>
             <div className="flex items-center gap-2">
-              {!allScraped && (
-                <button
-                  onClick={onScrape}
-                  disabled={scraping}
-                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50
-                           text-sm text-slate-200 rounded-lg transition-colors inline-flex items-center gap-2"
-                >
-                  {scraping ? (
-                    <>
-                      <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
-                      刮削中...
-                    </>
-                  ) : '刮削元数据'}
-                </button>
-              )}
+              <button
+                onClick={() => onScrape(true)}
+                disabled={scraping}
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50
+                         text-sm text-slate-200 rounded-lg transition-colors inline-flex items-center gap-2"
+                title="重新搜索所有动漫的封面和简介"
+              >
+                {scraping ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                    刮削中...
+                  </>
+                ) : allScraped ? '重新刮削' : '刮削元数据'}
+              </button>
               <button
                 onClick={onScan}
                 disabled={scanning}

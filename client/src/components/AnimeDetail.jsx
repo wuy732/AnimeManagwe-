@@ -46,10 +46,11 @@ function TagEditor({ tags, onTagsChange }) {
   )
 }
 
-export default function AnimeDetail({ anime, onBack, onUpdate, onPlay }) {
+export default function AnimeDetail({ anime, onBack, onUpdate, onPlay, onScrape, scraping }) {
   const [tags, setTags] = useState(anime.tags || [])
   const [episodes, setEpisodes] = useState(anime.episodes || [])
   const [saving, setSaving] = useState(false)
+  const [scrapingSelf, setScrapingSelf] = useState(false)
   const [error, setError] = useState('')
   const localCover = coverUrl(anime.cover)
   const posterUrl = anime.poster || localCover
@@ -173,23 +174,45 @@ export default function AnimeDetail({ anime, onBack, onUpdate, onPlay }) {
             </div>
 
             {/* Synopsis */}
-            {anime.summary && (
+            {anime.summary ? (
               <p className="mt-3 text-sm text-slate-300 leading-relaxed line-clamp-3">
                 {anime.summary}
               </p>
+            ) : (
+              <p className="mt-3 text-xs text-slate-600 italic">暂无简介，点击下方按钮从 Bangumi 刮削</p>
             )}
 
-            {/* Bangumi Tags */}
-            {anime.bangumi_tags?.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-3">
-                {anime.bangumi_tags.map(t => (
-                  <span key={t} className="px-2 py-0.5 bg-cyan-900/40 text-cyan-300 text-[11px]
-                                         rounded-full border border-cyan-800/50">
-                    {t}
-                  </span>
-                ))}
-              </div>
-            )}
+            {/* Bangumi Tags + Re-scrape */}
+            <div className="flex items-center gap-2 mt-3 flex-wrap">
+              {anime.bangumi_tags?.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {anime.bangumi_tags.map(t => (
+                    <span key={t} className="px-2 py-0.5 bg-cyan-900/40 text-cyan-300 text-[11px]
+                                           rounded-full border border-cyan-800/50">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <button
+                onClick={async () => {
+                  setScrapingSelf(true)
+                  await onScrape(anime.id)
+                  setScrapingSelf(false)
+                }}
+                disabled={scrapingSelf}
+                className="px-3 py-1 bg-cyan-900/30 hover:bg-cyan-900/50 disabled:opacity-50
+                         text-xs text-cyan-300 rounded-md border border-cyan-800/40 transition-colors
+                         inline-flex items-center gap-1"
+                title="从 Bangumi 重新搜索封面和简介"
+              >
+                {scrapingSelf ? (
+                  <><div className="w-3 h-3 border border-cyan-400 border-t-transparent rounded-full animate-spin" /> 刮削中...</>
+                ) : (
+                  <><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg> 重新刮削</>
+                )}
+              </button>
+            </div>
 
             {/* User Tags */}
             <div className="mt-4">
@@ -197,7 +220,7 @@ export default function AnimeDetail({ anime, onBack, onUpdate, onPlay }) {
               <TagEditor tags={tags} onTagsChange={handleTagsChange} />
             </div>
 
-            {saving && (
+            {(saving || scraping) && (
               <span className="inline-block mt-2 text-xs text-slate-500">保存中...</span>
             )}
           </div>
