@@ -10,13 +10,11 @@ import animeRouter from './routes/anime.js';
 import scannerRouter from './routes/scanner.js';
 import streamRouter from './routes/stream.js';
 
-const __dirname = (typeof __dirname !== 'undefined')
-  ? __dirname  // CJS (pkg bundled)
-  : dirname(fileURLToPath(import.meta.url));  // ESM (dev)
-// Bundle entry lives in server/dist-bundle/ — go up one more level
-const __root = __dirname.endsWith('dist-bundle')
-  ? join(__dirname, '..', '..')
-  : join(__dirname, '..');
+let currdir;
+try { currdir = __dirname; } catch { currdir = dirname(fileURLToPath(import.meta.url)); }
+const __root = currdir.endsWith('dist-bundle')
+  ? join(currdir, '..', '..')
+  : join(currdir, '..');
 const isPkg = typeof process.pkg !== 'undefined';
 
 // ── DB path (writable location for pkg) ──

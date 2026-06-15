@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { readFileSync, writeFileSync } from 'fs';
-import { scan } from '../services/scanner.js';
+import { scan, downloadCover } from '../services/scanner.js';
 import { scrapeAll, searchBangumi } from '../services/scraper.js';
 
 export default function scannerRouter(dbPath) {
@@ -27,7 +27,8 @@ export default function scannerRouter(dbPath) {
         anime.score = old.score || 0;
         anime.bangumi_tags = old.bangumi_tags || [];
         anime.scraped = old.scraped || false;
-        if (old.cover) anime.cover = old.cover;
+        if (old.cover && !anime.cover) anime.cover = old.cover;
+        if (old.notes && !anime.notes) anime.notes = old.notes;
 
         const oldEpByFilename = new Map(old.episodes.map(e => [e.filename, e]));
         for (const ep of anime.episodes) {
@@ -94,6 +95,8 @@ export default function scannerRouter(dbPath) {
         anime.bangumi_tags = info.bangumi_tags;
         anime.bangumi_id = info.bangumi_id;
         anime.name_cn = info.name_cn;
+        const localCover = await downloadCover(info.poster, anime.path);
+        if (localCover) anime.cover = localCover;
       }
       anime.scraped = true;
       writeDB(db);

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { downloadCover } from './scanner.js';
 
 const SEARCH_URL = 'https://api.bgm.tv/v0/search/subjects';
 const UA = 'AnimeManager/1.0 (local app)';
@@ -54,6 +55,8 @@ export async function scrapeAll(animes, writeDB, readDB, delayMs = 1500) {
       anime.bangumi_tags = info.bangumi_tags;
       anime.bangumi_id = info.bangumi_id;
       anime.name_cn = info.name_cn;
+      const localCover = await downloadCover(info.poster, anime.path);
+      if (localCover) anime.cover = localCover;
     }
     anime.scraped = true;
     updated = true;
