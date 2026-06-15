@@ -42,6 +42,7 @@ function TagEditor({ tags, onTagsChange }) {
 export default function AnimeDetail({ anime, onBack, onUpdate }) {
   const [tags, setTags] = useState(anime.tags || [])
   const [episodes, setEpisodes] = useState(anime.episodes || [])
+  const [isPublic, setIsPublic] = useState(anime.public !== false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [playMsg, setPlayMsg] = useState('')
@@ -50,7 +51,7 @@ export default function AnimeDetail({ anime, onBack, onUpdate }) {
   const [coverInput, setCoverInput] = useState('')
   const localCover = coverUrl(coverPath)
 
-  const save = async (newEpisodes, newTags, newCover) => {
+  const save = async (newEpisodes, newTags, newCover, newPublic) => {
     setSaving(true)
     setError('')
     try {
@@ -58,6 +59,7 @@ export default function AnimeDetail({ anime, onBack, onUpdate }) {
       if (newEpisodes) payload.episodes = newEpisodes
       if (newTags) payload.tags = newTags
       if (newCover !== undefined) payload.cover = newCover
+      if (newPublic !== undefined) payload.public = newPublic
       const updated = await updateAnime(anime.id, payload)
       onUpdate(updated)
     } catch (e) {
@@ -193,7 +195,25 @@ export default function AnimeDetail({ anime, onBack, onUpdate }) {
             <h1 className="text-2xl font-black text-white">{anime.name}</h1>
             <p className="text-xs text-slate-600 mt-1 truncate" title={anime.path}>{anime.path}</p>
 
-            <div className="flex items-center gap-4 mt-3">
+            <div className="flex items-center gap-3 mt-3 flex-wrap">
+              <button
+                onClick={async () => {
+                  const next = !isPublic
+                  setIsPublic(next)
+                  try {
+                    const updated = await updateAnime(anime.id, { public: next })
+                    onUpdate(updated)
+                  } catch { setIsPublic(!next) }
+                }}
+                className={`text-xs px-2 py-1 rounded-md border transition-colors ${
+                  isPublic
+                    ? 'bg-emerald-900/30 border-emerald-800 text-emerald-400 hover:bg-emerald-900/50'
+                    : 'bg-red-900/30 border-red-800 text-red-400 hover:bg-red-900/50'
+                }`}
+                title={isPublic ? '局域网可见 - 点击隐藏' : '仅管理员可见 - 点击公开'}
+              >
+                {isPublic ? '公开' : '隐藏'}
+              </button>
               <div className="text-sm">
                 <span className="text-violet-400 font-medium">{watched}</span>
                 <span className="text-slate-500">/{total} 集已看</span>

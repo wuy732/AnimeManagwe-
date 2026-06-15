@@ -13,6 +13,7 @@ const __root = join(__dirname, '..');
 const DIST_PATH = join(__root, 'client', 'dist');
 
 export function createApp(dbPath) {
+  const dbFile = dbPath || join(__root, 'db.json');
   const app = express();
   app.use(cors());
   app.use(express.json());
@@ -22,17 +23,17 @@ export function createApp(dbPath) {
     const filePath = req.query.path;
     if (!filePath || !existsSync(filePath)) return res.status(404).end();
     // Validate path is within known safe directories
-    const db = JSON.parse(readFileSync(dbPath, 'utf-8'));
+    const db = JSON.parse(readFileSync(dbFile, 'utf-8'));
     const safe = (db.animes || []).some(a => filePath.startsWith(a.path))
       || (db.anime_path && filePath.startsWith(db.anime_path));
     if (!safe) return res.status(403).json({ error: '路径不在允许范围内' });
     res.sendFile(filePath);
   });
 
-  app.use('/api/settings', settingsRouter(dbPath));
-  app.use('/api/animes', animeRouter(dbPath));
-  app.use('/api', scannerRouter(dbPath));
-  app.use('/api', playerRouter(dbPath));
+  app.use('/api/settings', settingsRouter(dbFile));
+  app.use('/api/animes', animeRouter(dbFile));
+  app.use('/api', scannerRouter(dbFile));
+  app.use('/api', playerRouter(dbFile));
 
   // Serve static frontend
   if (existsSync(DIST_PATH)) {
