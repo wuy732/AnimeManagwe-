@@ -14,11 +14,11 @@ export default function settingsRouter(dbPath) {
 
   router.get('/', (_req, res) => {
     const db = readDB();
-    res.json({ anime_path: db.anime_path, proxy: db.proxy || '' });
+    res.json({ anime_path: db.anime_path, proxy: db.proxy || '', public_mode: db.public_mode || false });
   });
 
   router.post('/', (req, res) => {
-    const { anime_path, proxy } = req.body;
+    const { anime_path, proxy, public_mode } = req.body;
     const db = readDB();
 
     if (anime_path !== undefined) {
@@ -35,8 +35,12 @@ export default function settingsRouter(dbPath) {
       db.proxy = (typeof proxy === 'string') ? proxy.trim() : '';
     }
 
+    if (public_mode !== undefined) {
+      db.public_mode = !!public_mode;
+    }
+
     writeDB(db);
-    res.json({ anime_path: db.anime_path, proxy: db.proxy || '' });
+    res.json({ anime_path: db.anime_path, proxy: db.proxy || '', public_mode: db.public_mode || false });
   });
 
   return router;

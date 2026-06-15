@@ -88,7 +88,7 @@ export function scan(animePath) {
             id: randomUUID(), name: sub, path: subPath,
             cover: findCover(subPath), notes: findNotes(subPath),
             poster: null, summary: '', score: 0, bangumi_tags: [],
-            tags: [], scraped: false, episodes: videos
+            tags: [], scraped: false, public: true, episodes: videos
           });
         }
       } catch { }
@@ -103,7 +103,7 @@ export function scan(animePath) {
       id: randomUUID(), name: entry, path: fullPath,
       cover: findCover(fullPath), notes: findNotes(fullPath),
       poster: null, summary: '', score: 0, bangumi_tags: [],
-      tags: [], scraped: false, episodes: videos
+      tags: [], scraped: false, public: true, episodes: videos
     });
   }
   return animes;

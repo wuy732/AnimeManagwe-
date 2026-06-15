@@ -28,6 +28,7 @@ export default function scannerRouter(dbPath) {
         anime.score = old.score || 0;
         anime.bangumi_tags = old.bangumi_tags || [];
         anime.scraped = old.scraped || false;
+        if (old.public !== undefined) anime.public = old.public;
         if (old.cover && !anime.cover) anime.cover = old.cover;
         if (old.notes && !anime.notes) anime.notes = old.notes;
 
