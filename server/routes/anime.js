@@ -30,11 +30,12 @@ export default function animeRouter(dbPath) {
     if (idx === -1) return res.status(404).json({ error: '动漫不存在' });
 
     const anime = db.animes[idx];
-    const { tags, episodes, cover, notes } = req.body;
+    const { tags, episodes, cover, notes, public: pub } = req.body;
 
     if (Array.isArray(tags)) anime.tags = tags;
     if (typeof cover === 'string') anime.cover = cover;
     if (typeof notes === 'string') anime.notes = notes;
+    if (typeof pub === 'boolean') anime.public = pub;
 
     if (Array.isArray(episodes)) {
       const epMap = new Map(anime.episodes.map(e => [e.filename, e]));

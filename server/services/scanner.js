@@ -103,7 +103,7 @@ export function scan(animePath) {
           animes.push({
             id: randomUUID(), name: sub, path: subPath,
             cover: findCover(subPath), notes: findNotes(subPath),
-            tags: [], episodes: videos
+            tags: [], public: true, episodes: videos
           });
         }
       } catch { /* skip */ }
@@ -124,7 +124,7 @@ export function scan(animePath) {
     animes.push({
       id: randomUUID(), name: entry, path: fullPath,
       cover: findCover(fullPath), notes: findNotes(fullPath),
-      tags: [], episodes: videos
+      tags: [], public: true, episodes: videos
     });
   }
 
