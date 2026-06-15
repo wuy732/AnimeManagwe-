@@ -49,19 +49,21 @@ function TagEditor({ tags, onTagsChange }) {
 export default function AnimeDetail({ anime, onBack, onUpdate, onPlay, onScrape, scraping }) {
   const [tags, setTags] = useState(anime.tags || [])
   const [episodes, setEpisodes] = useState(anime.episodes || [])
+  const [isPublic, setIsPublic] = useState(anime.public !== false)
   const [saving, setSaving] = useState(false)
   const [scrapingSelf, setScrapingSelf] = useState(false)
   const [error, setError] = useState('')
   const localCover = coverUrl(anime.cover)
   const posterUrl = anime.poster || localCover
 
-  const save = async (newEpisodes, newTags) => {
+  const save = async (newEpisodes, newTags, extra = {}) => {
     setSaving(true)
     setError('')
     try {
       const updated = await updateAnime(anime.id, {
         episodes: newEpisodes || episodes,
-        tags: newTags || tags
+        tags: newTags || tags,
+        ...extra
       })
       onUpdate(updated)
     } catch (e) {
@@ -153,8 +155,24 @@ export default function AnimeDetail({ anime, onBack, onUpdate, onPlay, onScrape,
               {anime.path}
             </p>
 
-            {/* Score + Stats */}
-            <div className="flex items-center gap-4 mt-3">
+            {/* Visibility + Score + Stats */}
+            <div className="flex items-center gap-3 mt-3 flex-wrap">
+              <button
+                onClick={async () => {
+                  const next = !isPublic
+                  setIsPublic(next)
+                  try { await updateAnime(anime.id, { public: next }); onUpdate({ ...anime, public: next }) }
+                  catch { setIsPublic(!next) }
+                }}
+                className={`text-xs px-2 py-1 rounded-md border transition-colors ${
+                  isPublic
+                    ? 'bg-emerald-900/30 border-emerald-800 text-emerald-400 hover:bg-emerald-900/50'
+                    : 'bg-red-900/30 border-red-800 text-red-400 hover:bg-red-900/50'
+                }`}
+                title={isPublic ? '局域网可见 - 点击隐藏' : '仅管理员可见 - 点击公开'}
+              >
+                {isPublic ? '公开' : '隐藏'}
+              </button>
               {anime.score > 0 && (
                 <div className="flex items-center gap-1">
                   <span className="text-yellow-400 text-sm">★</span>
