@@ -21,9 +21,8 @@ export default function scannerRouter(dbPath) {
       if (old) {
         anime.id = old.id;
         anime.tags = old.tags || [];
-        if (old.cover && old.cover !== anime.cover) {
-          anime.cover = old.cover;
-        }
+        if (old.cover && !anime.cover) anime.cover = old.cover;
+        if (old.notes && !anime.notes) anime.notes = old.notes;
         const oldEpByFilename = new Map(old.episodes.map(e => [e.filename, e]));
         for (const ep of anime.episodes) {
           const oldEp = oldEpByFilename.get(ep.filename);
