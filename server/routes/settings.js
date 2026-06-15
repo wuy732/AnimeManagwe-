@@ -14,21 +14,29 @@ export default function settingsRouter(dbPath) {
 
   router.get('/', (_req, res) => {
     const db = readDB();
-    res.json({ anime_path: db.anime_path });
+    res.json({ anime_path: db.anime_path, proxy: db.proxy || '' });
   });
 
   router.post('/', (req, res) => {
-    const { anime_path } = req.body;
-    if (!anime_path || typeof anime_path !== 'string') {
-      return res.status(400).json({ error: '请提供有效的 anime_path' });
-    }
-    if (!existsSync(anime_path)) {
-      return res.status(400).json({ error: `路径不存在: ${anime_path}` });
-    }
+    const { anime_path, proxy } = req.body;
     const db = readDB();
-    db.anime_path = anime_path;
+
+    if (anime_path !== undefined) {
+      if (typeof anime_path !== 'string' || !anime_path.trim()) {
+        return res.status(400).json({ error: '请提供有效的 anime_path' });
+      }
+      if (!existsSync(anime_path)) {
+        return res.status(400).json({ error: `路径不存在: ${anime_path}` });
+      }
+      db.anime_path = anime_path;
+    }
+
+    if (proxy !== undefined) {
+      db.proxy = (typeof proxy === 'string') ? proxy.trim() : '';
+    }
+
     writeDB(db);
-    res.json({ anime_path: db.anime_path });
+    res.json({ anime_path: db.anime_path, proxy: db.proxy || '' });
   });
 
   return router;

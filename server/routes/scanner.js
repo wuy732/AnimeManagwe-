@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { readFileSync, writeFileSync } from 'fs';
 import { scan, downloadCover } from '../services/scanner.js';
-import { scrapeAll, searchBangumi } from '../services/scraper.js';
+import { scrapeAll, searchBangumi, setDbPath } from '../services/scraper.js';
 
 export default function scannerRouter(dbPath) {
+  setDbPath(dbPath);
   const router = Router();
 
   function readDB() {
