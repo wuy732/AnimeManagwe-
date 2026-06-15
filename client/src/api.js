@@ -41,6 +41,7 @@ export async function scrapeAnime(id) {
 
 export async function getAnimes() {
   const res = await fetch(`${BASE}/animes`);
+  if (!res.ok) throw new Error('获取动漫列表失败');
   return res.json();
 }
 

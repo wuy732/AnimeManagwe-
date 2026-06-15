@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { getSettings, getAnimes, triggerScan, triggerScrape, scrapeAnime } from './api'
 import SetupWizard from './components/SetupWizard'
 import AnimeGrid from './components/AnimeGrid'
@@ -13,7 +13,8 @@ export default function App() {
   const [animes, setAnimes] = useState([])
   const [selected, setSelected] = useState(null)
   const [error, setError] = useState('')
-  const [player, setPlayer] = useState(null) // { anime, episode }
+  const [player, setPlayer] = useState(null)
+  const pollRef = useRef(null)
 
   const loadAnimes = useCallback(async () => {
     try {
@@ -23,6 +24,29 @@ export default function App() {
       setError('加载动漫列表失败')
     }
   }, [])
+
+  const startPoll = useCallback((intervalMs = 2000) => {
+    if (pollRef.current) clearInterval(pollRef.current)
+    let polls = 0
+    pollRef.current = setInterval(async () => {
+      try {
+        const data = await getAnimes()
+        setAnimes(data)
+        polls++
+        if (data.every(a => a.scraped) || polls > 30) {
+          clearInterval(pollRef.current)
+          pollRef.current = null
+          setScraping(false)
+        }
+      } catch {
+        clearInterval(pollRef.current)
+        pollRef.current = null
+        setScraping(false)
+      }
+    }, intervalMs)
+  }, [])
+
+  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
 
   const loadSettings = useCallback(async () => {
     try {
@@ -49,19 +73,9 @@ export default function App() {
     try {
       const result = await triggerScan()
       setAnimes(result.animes)
-      // Auto-scrape after scan
       setScraping(true)
       triggerScrape().finally(() => setScraping(false))
-      // Poll for scrape results
-      let polls = 0
-      const interval = setInterval(async () => {
-        try {
-          const data = await getAnimes()
-          setAnimes(data)
-          polls++
-          if (data.every(a => a.scraped) || polls > 30) clearInterval(interval)
-        } catch { clearInterval(interval) }
-      }, 2000)
+      startPoll()
     } catch (e) {
       setError(e.message)
     } finally {
@@ -69,26 +83,11 @@ export default function App() {
     }
   }
 
-  const pollScrape = (intervalMs = 2000) => {
-    let polls = 0
-    const interval = setInterval(async () => {
-      try {
-        const data = await getAnimes()
-        setAnimes(data)
-        polls++
-        if (data.every(a => a.scraped) || polls > 30) {
-          clearInterval(interval)
-          setScraping(false)
-        }
-      } catch { clearInterval(interval); setScraping(false) }
-    }, intervalMs)
-  }
-
   const handleScrape = async (force = false) => {
     setScraping(true)
     try {
       await triggerScrape(force)
-      pollScrape()
+      startPoll()
     } catch (e) {
       setError(e.message)
       setScraping(false)

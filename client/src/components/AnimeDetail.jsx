@@ -263,7 +263,7 @@ export default function AnimeDetail({ anime, onBack, onUpdate, onPlay, onScrape,
                   {ep.progress > 0 && !ep.watched && (
                     <div className="mt-1 h-0.5 bg-slate-700 rounded-full overflow-hidden max-w-60">
                       <div className="h-full bg-violet-500/60 rounded-full"
-                           style={{ width: `${Math.min((ep.progress / 1440) * 100, 100)}%` }} />
+                           style={{ width: `${Math.min((ep.progress / 1800) * 100, 100)}%` }} />
                     </div>
                   )}
                 </div>
