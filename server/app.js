@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import settingsRouter from './routes/settings.js';
 import animeRouter from './routes/anime.js';
 import scannerRouter from './routes/scanner.js';
@@ -21,6 +21,11 @@ export function createApp(dbPath) {
   app.get('/api/cover', (req, res) => {
     const filePath = req.query.path;
     if (!filePath || !existsSync(filePath)) return res.status(404).end();
+    // Validate path is within known safe directories
+    const db = JSON.parse(readFileSync(dbPath, 'utf-8'));
+    const safe = (db.animes || []).some(a => filePath.startsWith(a.path))
+      || (db.anime_path && filePath.startsWith(db.anime_path));
+    if (!safe) return res.status(403).json({ error: '路径不在允许范围内' });
     res.sendFile(filePath);
   });
 
