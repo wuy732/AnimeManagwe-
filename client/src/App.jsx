@@ -10,6 +10,7 @@ export default function App() {
   const [scanning, setScanning] = useState(false)
   const [scraping, setScraping] = useState(false)
   const [animePath, setAnimePath] = useState('')
+  const [publicMode, setPublicMode] = useState(false)
   const [animes, setAnimes] = useState([])
   const [selected, setSelected] = useState(null)
   const [error, setError] = useState('')
@@ -50,8 +51,9 @@ export default function App() {
 
   const loadSettings = useCallback(async () => {
     try {
-      const { anime_path } = await getSettings()
+      const { anime_path, public_mode } = await getSettings()
       setAnimePath(anime_path)
+      setPublicMode(!!public_mode)
       if (anime_path) await loadAnimes()
     } catch {
       setError('无法连接服务器')
@@ -65,6 +67,12 @@ export default function App() {
   const handlePathSet = async (path) => {
     setAnimePath(path)
     await doScan()
+  }
+
+  const handleSettingsUpdate = async (fields) => {
+    if (fields.public_mode !== undefined) {
+      setPublicMode(!!fields.public_mode)
+    }
   }
 
   const doScan = async () => {
@@ -142,7 +150,9 @@ export default function App() {
     return (
       <SetupWizard
         hasPath={!!animePath}
+        publicMode={publicMode}
         onPathSet={handlePathSet}
+        onSettingsUpdate={handleSettingsUpdate}
         onScan={doScan}
         scanning={scanning}
         error={error}

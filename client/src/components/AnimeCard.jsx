@@ -112,6 +112,19 @@ export default function AnimeCard({ anime, onClick }) {
         <h3 className="font-semibold text-sm text-white truncate" title={displayName}>
           {displayName}
         </h3>
+        {/* User tags */}
+        {anime.tags?.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1">
+            {anime.tags.slice(0, 3).map(t => (
+              <span key={t} className="px-1.5 py-0.5 bg-violet-600/20 text-violet-300 text-[10px] rounded">
+                {t}
+              </span>
+            ))}
+            {anime.tags.length > 3 && (
+              <span className="text-[10px] text-slate-500">+{anime.tags.length - 3}</span>
+            )}
+          </div>
+        )}
         <div className="flex items-center justify-between mt-1">
           <p className="text-xs text-slate-400">
             {watched}/{total} 集

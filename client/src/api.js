@@ -6,11 +6,11 @@ export async function getSettings() {
   return res.json();
 }
 
-export async function updateSettings(animePath) {
+export async function updateSettings(fields) {
   const res = await fetch(`${BASE}/settings`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ anime_path: animePath })
+    body: JSON.stringify(fields)
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || '保存设置失败');

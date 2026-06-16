@@ -1,40 +1,36 @@
 import { Router } from 'express';
-import { readFileSync, writeFileSync } from 'fs';
+import { createDB } from '../services/db.js';
 
 export default function animeRouter(dbPath) {
   const router = Router();
-
-  function readDB() {
-    return JSON.parse(readFileSync(dbPath, 'utf-8'));
-  }
-
-  function writeDB(data) {
-    writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf-8');
-  }
+  const db = createDB(dbPath);
 
   router.get('/', (req, res) => {
-    const db = readDB();
-    let list = db.animes || [];
-    // Filter: if public_mode is on and request asks for public only
-    if (db.public_mode && req.query.public_only === 'true') {
-      list = list.filter(a => a.public !== false);
+    const data = db.read();
+    let list = data.animes || [];
+    // public_mode: localhost (admin) sees all; LAN visitors only see public anime
+    if (data.public_mode) {
+      const isLocal = req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1';
+      if (!isLocal) {
+        list = list.filter(a => a.public !== false);
+      }
     }
     res.json(list);
   });
 
   router.get('/:id', (req, res) => {
-    const db = readDB();
-    const anime = (db.animes || []).find(a => a.id === req.params.id);
+    const data = db.read();
+    const anime = (data.animes || []).find(a => a.id === req.params.id);
     if (!anime) return res.status(404).json({ error: '动漫不存在' });
     res.json(anime);
   });
 
   router.patch('/:id', (req, res) => {
-    const db = readDB();
-    const idx = (db.animes || []).findIndex(a => a.id === req.params.id);
+    const data = db.read();
+    const idx = (data.animes || []).findIndex(a => a.id === req.params.id);
     if (idx === -1) return res.status(404).json({ error: '动漫不存在' });
 
-    const anime = db.animes[idx];
+    const anime = data.animes[idx];
     const { tags, episodes, cover, notes, public: pub } = req.body;
 
     if (Array.isArray(tags)) anime.tags = tags;
@@ -53,7 +49,7 @@ export default function animeRouter(dbPath) {
       }
     }
 
-    writeDB(db);
+    db.write(data);
     res.json(anime);
   });
 

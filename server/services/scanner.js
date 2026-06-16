@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync, existsSync, createWriteStream } from 'fs';
+import { readdirSync, readFileSync, statSync, existsSync, createWriteStream, unlinkSync } from 'fs';
 import { join, extname, basename } from 'path';
 import { randomUUID } from 'crypto';
 import https from 'https';
@@ -114,16 +114,24 @@ export function downloadCover(url, destDir) {
     if (!url) return resolve(null);
     const ext = url.match(/\.(jpg|jpeg|png)/i)?.[0] || '.jpg';
     const dest = join(destDir, `cover${ext}`);
-    if (existsSync(dest)) return resolve(dest);
+    if (existsSync(dest)) {
+      try { if (statSync(dest).size > 0) return resolve(dest); } catch {}
+      try { unlinkSync(dest); } catch {}
+    }
     const file = createWriteStream(dest);
     const mod = url.startsWith('https') ? https : http;
+    const cleanup = () => { try { file.close(); } catch {}; try { unlinkSync(dest); } catch {}; };
     mod.get(url, { timeout: 15000 }, (res) => {
-      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) { file.close(); return resolve(downloadCover(res.headers.location, destDir)); }
-      if (res.statusCode !== 200) { file.close(); return resolve(null); }
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        cleanup();
+        return resolve(downloadCover(res.headers.location, destDir));
+      }
+      if (res.statusCode !== 200) { cleanup(); return resolve(null); }
+      res.on('error', () => { cleanup(); resolve(null); });
       res.pipe(file);
       file.on('finish', () => resolve(dest));
-      file.on('error', () => { try { file.close(); } catch {}; resolve(null); });
-    }).on('error', () => { try { file.close(); } catch {}; resolve(null); })
-      .on('timeout', () => { file.close(); resolve(null); });
+      file.on('error', () => { cleanup(); resolve(null); });
+    }).on('error', () => { cleanup(); resolve(null); })
+      .on('timeout', () => { cleanup(); resolve(null); });
   });
 }

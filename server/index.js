@@ -61,6 +61,16 @@ app.use(express.json());
 app.get('/api/cover', (req, res) => {
   const filePath = req.query.path;
   if (!filePath || !existsSync(filePath)) return res.status(404).end();
+  // Path traversal protection: only allow paths within anime directory
+  try {
+    const db = JSON.parse(readFileSync(DB_PATH, 'utf-8'));
+    const safe = db.anime_path;
+    if (safe) {
+      const a = safe.replace(/\\/g, '/').toLowerCase();
+      const b = filePath.replace(/\\/g, '/').toLowerCase();
+      if (!b.startsWith(a)) return res.status(403).end();
+    }
+  } catch {}
   res.sendFile(filePath);
 });
 
@@ -72,7 +82,7 @@ app.get('/api/server-info', (_req, res) => {
 app.use('/api/settings', settingsRouter(DB_PATH));
 app.use('/api/animes', animeRouter(DB_PATH));
 app.use('/api', scannerRouter(DB_PATH));
-app.use('/api', streamRouter());
+app.use('/api', streamRouter(DB_PATH));
 
 // ── Production: serve static frontend ──
 if (existsSync(DIST_PATH)) {
@@ -113,8 +123,9 @@ function startServer(port) {
 const PORT = 3001;
 
 async function boot() {
+  let server;
   try {
-    var server = await startServer(PORT);
+    server = await startServer(PORT);
   } catch (err) {
     if (err.code === 'EADDRINUSE') {
       console.log('[boot] 端口被占用，正在关闭旧进程...');

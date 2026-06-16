@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { statSync, createReadStream, existsSync } from 'fs';
+import { statSync, createReadStream, existsSync, readFileSync } from 'fs';
 import { extname } from 'path';
 
 const MIME = {
@@ -9,13 +9,28 @@ const MIME = {
   '.webm': 'video/webm'
 };
 
-export default function streamRouter() {
+export default function streamRouter(dbPath) {
   const router = Router();
+
+  function validatePath(filePath) {
+    if (!dbPath) return true; // no db path to validate against
+    try {
+      const db = JSON.parse(readFileSync(dbPath, 'utf-8'));
+      const safe = db.anime_path;
+      if (!safe) return true;
+      const a = safe.replace(/\\/g, '/').toLowerCase();
+      const b = filePath.replace(/\\/g, '/').toLowerCase();
+      return b.startsWith(a);
+    } catch { return true; }
+  }
 
   router.get('/stream', (req, res) => {
     const filePath = req.query.path;
     if (!filePath || !existsSync(filePath)) {
       return res.status(404).json({ error: '文件不存在' });
+    }
+    if (!validatePath(filePath)) {
+      return res.status(403).json({ error: '禁止访问' });
     }
 
     const stat = statSync(filePath);

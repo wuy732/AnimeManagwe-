@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { updateAnime, coverUrl } from '../api'
 
+function formatTime(seconds) {
+  if (!seconds || seconds <= 0) return ''
+  const m = Math.floor(seconds / 60)
+  const s = Math.floor(seconds % 60)
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
+
 function TagEditor({ tags, onTagsChange }) {
   const [input, setInput] = useState('')
 
@@ -158,20 +165,16 @@ export default function AnimeDetail({ anime, onBack, onUpdate, onPlay, onScrape,
             {/* Visibility + Score + Stats */}
             <div className="flex items-center gap-3 mt-3 flex-wrap">
               <button
-                onClick={async () => {
-                  const next = !isPublic
-                  setIsPublic(next)
-                  try { await updateAnime(anime.id, { public: next }); onUpdate({ ...anime, public: next }) }
-                  catch { setIsPublic(!next) }
-                }}
-                className={`text-xs px-2 py-1 rounded-md border transition-colors ${
+                onClick={() => { setIsPublic(!isPublic); save(null, null, { public: !isPublic }) }}
+                disabled={saving}
+                className={`text-xs px-2 py-1 rounded-md border transition-colors disabled:opacity-50 ${
                   isPublic
                     ? 'bg-emerald-900/30 border-emerald-800 text-emerald-400 hover:bg-emerald-900/50'
                     : 'bg-red-900/30 border-red-800 text-red-400 hover:bg-red-900/50'
                 }`}
-                title={isPublic ? '局域网可见 - 点击隐藏' : '仅管理员可见 - 点击公开'}
+                title={isPublic ? '局域网可见 - 点击设为隐藏' : '仅管理员可见 - 点击设为公开'}
               >
-                {isPublic ? '公开' : '隐藏'}
+                {isPublic ? '设为隐藏' : '设为公开'}
               </button>
               {anime.score > 0 && (
                 <div className="flex items-center gap-1">
@@ -277,12 +280,11 @@ export default function AnimeDetail({ anime, onBack, onUpdate, onPlay, onScrape,
                   <p className={`text-sm truncate ${ep.watched ? 'text-slate-500 line-through' : 'text-slate-200'}`}>
                     {ep.filename}
                   </p>
-                  {/* Mini progress bar */}
+                  {/* Progress indicator */}
                   {ep.progress > 0 && !ep.watched && (
-                    <div className="mt-1 h-0.5 bg-slate-700 rounded-full overflow-hidden max-w-60">
-                      <div className="h-full bg-violet-500/60 rounded-full"
-                           style={{ width: `${Math.min((ep.progress / 1800) * 100, 100)}%` }} />
-                    </div>
+                    <span className="text-[11px] text-violet-400/70 ml-2">
+                      已看 {formatTime(ep.progress)}
+                    </span>
                   )}
                 </div>
 

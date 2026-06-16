@@ -1,19 +1,12 @@
 import { Router } from 'express';
-import { readFileSync, writeFileSync } from 'fs';
 import { scan, downloadCover } from '../services/scanner.js';
 import { scrapeAll, searchBangumi, setDbPath } from '../services/scraper.js';
+import { createDB } from '../services/db.js';
 
 export default function scannerRouter(dbPath) {
   setDbPath(dbPath);
   const router = Router();
-
-  function readDB() {
-    return JSON.parse(readFileSync(dbPath, 'utf-8'));
-  }
-
-  function writeDB(data) {
-    writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf-8');
-  }
+  const db = createDB(dbPath);
 
   function mergeAnimes(existing, scanned) {
     const existingByPath = new Map(existing.map(a => [a.path, a]));
@@ -29,8 +22,9 @@ export default function scannerRouter(dbPath) {
         anime.bangumi_tags = old.bangumi_tags || [];
         anime.scraped = old.scraped || false;
         if (old.public !== undefined) anime.public = old.public;
-        if (old.cover && !anime.cover) anime.cover = old.cover;
-        if (old.notes && !anime.notes) anime.notes = old.notes;
+        // Always preserve user's custom cover (may be set via scrape or manual)
+        if (old.cover) anime.cover = old.cover;
+        if (old.notes) anime.notes = old.notes;
 
         const oldEpByFilename = new Map(old.episodes.map(e => [e.filename, e]));
         for (const ep of anime.episodes) {
@@ -48,14 +42,14 @@ export default function scannerRouter(dbPath) {
 
   router.post('/scan', (req, res) => {
     try {
-      const db = readDB();
-      if (!db.anime_path) {
+      const data = db.read();
+      if (!data.anime_path) {
         return res.status(400).json({ error: '请先设置动漫资源路径' });
       }
-      const scanned = scan(db.anime_path);
-      db.animes = mergeAnimes(db.animes || [], scanned);
-      writeDB(db);
-      res.json({ count: db.animes.length, animes: db.animes });
+      const scanned = scan(data.anime_path);
+      data.animes = mergeAnimes(data.animes || [], scanned);
+      db.write(data);
+      res.json({ count: data.animes.length, animes: data.animes });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -64,17 +58,17 @@ export default function scannerRouter(dbPath) {
   // Batch scrape all unscraped (or force re-scrape all)
   router.post('/scrape', async (req, res) => {
     try {
-      const db = readDB();
-      if (!db.animes || db.animes.length === 0) {
+      const data = db.read();
+      if (!data.animes || data.animes.length === 0) {
         return res.status(400).json({ error: '没有动漫数据，请先扫描' });
       }
       const force = req.query.force === 'true';
       if (force) {
-        for (const a of db.animes) a.scraped = false;
-        writeDB(db);
+        for (const a of data.animes) a.scraped = false;
+        db.write(data);
       }
       res.json({ message: '刮削已启动' });
-      await scrapeAll(db.animes, writeDB, readDB);
+      await scrapeAll(data.animes, (d) => db.write(d), () => db.read());
     } catch (err) {
       console.error('[scrape] error:', err.message);
     }
@@ -83,8 +77,8 @@ export default function scannerRouter(dbPath) {
   // Scrape a single anime (force re-scrape)
   router.post('/scrape/:id', async (req, res) => {
     try {
-      const db = readDB();
-      const anime = (db.animes || []).find(a => a.id === req.params.id);
+      const data = db.read();
+      const anime = (data.animes || []).find(a => a.id === req.params.id);
       if (!anime) return res.status(404).json({ error: '动漫不存在' });
 
       res.json({ message: '刮削已启动' });
@@ -101,7 +95,7 @@ export default function scannerRouter(dbPath) {
         if (localCover) anime.cover = localCover;
       }
       anime.scraped = true;
-      writeDB(db);
+      db.write(data);
     } catch (err) {
       console.error('[scrape] error:', err.message);
     }
