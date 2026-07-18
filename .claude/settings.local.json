@@ -15,7 +15,8 @@
       "Bash(npx vite *)",
       "PowerShell(Get-Process *)",
       "Bash(npx concurrently *)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
+      "PowerShell(git add *)"
     ]
   }
 }
