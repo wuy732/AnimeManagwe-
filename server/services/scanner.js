@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, statSync, existsSync } from 'fs';
 import { join, extname, basename } from 'path';
 import { randomUUID } from 'crypto';
 
-const VIDEO_EXTS = new Set(['.mp4', '.mkv', '.avi']);
+const VIDEO_EXTS = new Set(['.mp4', '.mkv', '.avi', '.webm']);
 const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg']);
 const COVER_NAMES = new Set(['cover', 'poster', 'folder', 'front']);
 const MISC_FOLDERS = new Set(['其他', 'misc', 'other', '杂项']);

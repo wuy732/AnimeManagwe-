@@ -1,12 +1,20 @@
 import { Router } from 'express';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync } from 'fs';
 import { detectPlayer, getPlayerName, playFile } from '../services/player.js';
+import { createDB } from '../services/db.js';
 
 export default function playerRouter(dbPath) {
   const router = Router();
+  const db = createDB(dbPath);
 
-  function readDB() {
-    return JSON.parse(readFileSync(dbPath, 'utf-8'));
+  function validatePath(filePath) {
+    try {
+      const data = db.read();
+      const norm = (p) => p.replace(/\\/g, '/').toLowerCase();
+      const fp = norm(filePath);
+      return (data.animes || []).some(a => fp.startsWith(norm(a.path)))
+        || (data.anime_path && fp.startsWith(norm(data.anime_path)));
+    } catch { return true; }
   }
 
   router.post('/play', async (req, res) => {
@@ -14,9 +22,12 @@ export default function playerRouter(dbPath) {
     if (!filePath || !existsSync(filePath)) {
       return res.status(400).json({ error: '文件不存在' });
     }
+    if (!validatePath(filePath)) {
+      return res.status(403).json({ error: '路径不在允许范围内' });
+    }
 
-    const db = readDB();
-    const playerPath = detectPlayer(db.player_path);
+    const data = db.read();
+    const playerPath = detectPlayer(data.player_path);
 
     if (!playerPath) {
       return res.status(400).json({
@@ -33,8 +44,8 @@ export default function playerRouter(dbPath) {
   });
 
   router.post('/detect-player', (_req, res) => {
-    const db = readDB();
-    const found = detectPlayer(db.player_path);
+    const data = db.read();
+    const found = detectPlayer(data.player_path);
     if (found) {
       res.json({ found: true, path: found, name: getPlayerName(found) });
     } else {

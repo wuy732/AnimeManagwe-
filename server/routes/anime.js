@@ -1,35 +1,28 @@
 import { Router } from 'express';
-import { readFileSync, writeFileSync } from 'fs';
+import { createDB } from '../services/db.js';
 
 export default function animeRouter(dbPath) {
   const router = Router();
-
-  function readDB() {
-    return JSON.parse(readFileSync(dbPath, 'utf-8'));
-  }
-
-  function writeDB(data) {
-    writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf-8');
-  }
+  const db = createDB(dbPath);
 
   router.get('/', (_req, res) => {
-    const db = readDB();
-    res.json(db.animes || []);
+    const data = db.read();
+    res.json(data.animes || []);
   });
 
   router.get('/:id', (req, res) => {
-    const db = readDB();
-    const anime = (db.animes || []).find(a => a.id === req.params.id);
+    const data = db.read();
+    const anime = (data.animes || []).find(a => a.id === req.params.id);
     if (!anime) return res.status(404).json({ error: '动漫不存在' });
     res.json(anime);
   });
 
   router.patch('/:id', (req, res) => {
-    const db = readDB();
-    const idx = (db.animes || []).findIndex(a => a.id === req.params.id);
+    const data = db.read();
+    const idx = (data.animes || []).findIndex(a => a.id === req.params.id);
     if (idx === -1) return res.status(404).json({ error: '动漫不存在' });
 
-    const anime = db.animes[idx];
+    const anime = data.animes[idx];
     const { tags, episodes, cover, notes, public: pub } = req.body;
 
     if (Array.isArray(tags)) anime.tags = tags;
@@ -48,7 +41,7 @@ export default function animeRouter(dbPath) {
       }
     }
 
-    writeDB(db);
+    db.write(data);
     res.json(anime);
   });
 

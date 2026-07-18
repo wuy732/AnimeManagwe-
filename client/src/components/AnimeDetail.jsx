@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { updateAnime, playEpisode, coverUrl } from '../api'
 
 function TagEditor({ tags, onTagsChange }) {
@@ -47,6 +47,8 @@ export default function AnimeDetail({ anime, onBack, onUpdate }) {
   const [error, setError] = useState('')
   const [playMsg, setPlayMsg] = useState('')
   const [coverPath, setCoverPath] = useState(anime.cover || '')
+  // Sync coverPath when parent updates anime.cover (e.g. after re-scan)
+  useEffect(() => { setCoverPath(anime.cover || '') }, [anime.cover])
   const [showCoverInput, setShowCoverInput] = useState(false)
   const [coverInput, setCoverInput] = useState('')
   const localCover = coverUrl(coverPath)
@@ -197,22 +199,16 @@ export default function AnimeDetail({ anime, onBack, onUpdate }) {
 
             <div className="flex items-center gap-3 mt-3 flex-wrap">
               <button
-                onClick={async () => {
-                  const next = !isPublic
-                  setIsPublic(next)
-                  try {
-                    const updated = await updateAnime(anime.id, { public: next })
-                    onUpdate(updated)
-                  } catch { setIsPublic(!next) }
-                }}
-                className={`text-xs px-2 py-1 rounded-md border transition-colors ${
+                onClick={() => { setIsPublic(!isPublic); save(null, null, undefined, !isPublic) }}
+                disabled={saving}
+                className={`text-xs px-2 py-1 rounded-md border transition-colors disabled:opacity-50 ${
                   isPublic
                     ? 'bg-emerald-900/30 border-emerald-800 text-emerald-400 hover:bg-emerald-900/50'
                     : 'bg-red-900/30 border-red-800 text-red-400 hover:bg-red-900/50'
                 }`}
-                title={isPublic ? '局域网可见 - 点击隐藏' : '仅管理员可见 - 点击公开'}
+                title={isPublic ? '局域网可见 - 点击设为隐藏' : '仅管理员可见 - 点击设为公开'}
               >
-                {isPublic ? '公开' : '隐藏'}
+                {isPublic ? '设为隐藏' : '设为公开'}
               </button>
               <div className="text-sm">
                 <span className="text-violet-400 font-medium">{watched}</span>

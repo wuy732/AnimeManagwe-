@@ -1,17 +1,10 @@
 import { Router } from 'express';
-import { readFileSync, writeFileSync } from 'fs';
 import { scan } from '../services/scanner.js';
+import { createDB } from '../services/db.js';
 
 export default function scannerRouter(dbPath) {
   const router = Router();
-
-  function readDB() {
-    return JSON.parse(readFileSync(dbPath, 'utf-8'));
-  }
-
-  function writeDB(data) {
-    writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf-8');
-  }
+  const db = createDB(dbPath);
 
   function mergeAnimes(existing, scanned) {
     const existingByPath = new Map(existing.map(a => [a.path, a]));
@@ -21,8 +14,9 @@ export default function scannerRouter(dbPath) {
       if (old) {
         anime.id = old.id;
         anime.tags = old.tags || [];
-        if (old.cover && !anime.cover) anime.cover = old.cover;
-        if (old.notes && !anime.notes) anime.notes = old.notes;
+        // Always preserve user's custom cover (may be set manually)
+        if (old.cover) anime.cover = old.cover;
+        if (old.notes) anime.notes = old.notes;
         if (old.public !== undefined) anime.public = old.public;
         const oldEpByFilename = new Map(old.episodes.map(e => [e.filename, e]));
         for (const ep of anime.episodes) {
@@ -40,14 +34,14 @@ export default function scannerRouter(dbPath) {
 
   router.post('/scan', (req, res) => {
     try {
-      const db = readDB();
-      if (!db.anime_path) {
+      const data = db.read();
+      if (!data.anime_path) {
         return res.status(400).json({ error: '请先设置动漫资源路径' });
       }
-      const scanned = scan(db.anime_path);
-      db.animes = mergeAnimes(db.animes || [], scanned);
-      writeDB(db);
-      res.json({ count: db.animes.length, animes: db.animes });
+      const scanned = scan(data.anime_path);
+      data.animes = mergeAnimes(data.animes || [], scanned);
+      db.write(data);
+      res.json({ count: data.animes.length, animes: data.animes });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }

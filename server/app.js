@@ -24,8 +24,10 @@ export function createApp(dbPath) {
     if (!filePath || !existsSync(filePath)) return res.status(404).end();
     // Validate path is within known safe directories
     const db = JSON.parse(readFileSync(dbFile, 'utf-8'));
-    const safe = (db.animes || []).some(a => filePath.startsWith(a.path))
-      || (db.anime_path && filePath.startsWith(db.anime_path));
+    const norm = (p) => p.replace(/\\/g, '/').toLowerCase();
+    const fp = norm(filePath);
+    const safe = (db.animes || []).some(a => fp.startsWith(norm(a.path)))
+      || (db.anime_path && fp.startsWith(norm(db.anime_path)));
     if (!safe) return res.status(403).json({ error: '路径不在允许范围内' });
     res.sendFile(filePath);
   });
